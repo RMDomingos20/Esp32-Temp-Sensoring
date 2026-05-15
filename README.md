@@ -15,6 +15,7 @@
   Academic project developed for the Sensors and Instrumentation course<br>
   IFSP — Bragança Paulista Campus
 </p>
+</div>
 
 ---
 
