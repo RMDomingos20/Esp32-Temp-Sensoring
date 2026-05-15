@@ -1,3 +1,5 @@
+<div align="center">
+  
 # Temperature Monitoring and Telemetry System
 
 <p align="center">
