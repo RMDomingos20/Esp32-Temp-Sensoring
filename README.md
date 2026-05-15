@@ -1,104 +1,183 @@
-# Temperature Monitoring and Telemetry System: ESP32, K-Type Thermocouple, and 100k NTC
+# Temperature Monitoring and Telemetry System
 
-This repository contains the technical implementation of a high-precision thermal data acquisition and telemetry system based on the ESP32 microcontroller. The system integrates heterogeneous sensors to provide real-time temperature monitoring through an embedded web interface, designed for applications requiring both wide-range industrial sensing and ambient precision.
+<p align="center">
+  <img src="https://img.shields.io/badge/Platform-ESP32-blue?style=for-the-badge&logo=espressif" />
+  <img src="https://img.shields.io/badge/Language-C%2B%2B-00599C?style=for-the-badge&logo=cplusplus" />
+  <img src="https://img.shields.io/badge/IDE-Arduino_IDE-00979D?style=for-the-badge&logo=arduino" />
+  <img src="https://img.shields.io/badge/Sensors-K--Type_Thermocouple-important?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Web_Interface-Chart.js-orange?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Architecture-IoT-success?style=for-the-badge" />
+</p>
 
-This project was developed as a formal requirement for the Sensors and Instrumentation course, supervised by Prof. Dr. Alexandre Fonseca Jorge at the Federal Institute of São Paulo (IFSP) - Bragança Paulista Campus.
+<p align="center">
+  Academic project developed for the Sensors and Instrumentation course<br>
+  IFSP — Bragança Paulista Campus
+</p>
 
-## 1. Technical Overview
+---
 
-The system architecture is designed to handle dual-channel temperature sensing with distinct physical properties:
+## Overview
 
-* **High-Temperature Channel:** Utilizing a K-Type Thermocouple interfaced via a MAX6675 Cold-Junction Compensated K-Thermocouple-to-Digital Converter.
-* **Precision Ambient Channel:** Utilizing a 100kΩ Negative Temperature Coefficient (NTC) thermistor via a 12-bit Analog-to-Digital Converter (ADC) input.
+This project implements a real-time temperature monitoring and telemetry system using the ESP32 microcontroller. The system combines two different sensing methods to provide both high-temperature industrial measurements and precise ambient temperature acquisition.
 
-### Key Features
-* **Asynchronous Data Streaming:** Real-time data visualization via a web dashboard.
-* **Signal Processing:** Implementation of digital filtering (moving average) to mitigate electromagnetic interference (EMI) and ADC quantization noise.
-* **Embedded Web Server:** A lightweight HTTP server serving a dynamic frontend with real-time charting capabilities using Chart.js.
-* **Non-Linearity Compensation:** Mathematical linearization of thermistor resistance through the Steinhart-Hart model.
+The first sensing channel uses a K-Type thermocouple connected through a MAX6675 digital converter, while the second channel uses a 100kΩ NTC thermistor connected directly to the ESP32 ADC.
 
-## 2. Hardware Architecture and Specifications
+An embedded web server hosted on the ESP32 provides a lightweight dashboard for live monitoring, displaying sensor data through dynamic charts and asynchronous updates over Wi-Fi.
 
-### 2.1 Component List
-* **Microcontroller:** ESP32 (Xtensa® Dual-Core 32-bit LX6) featuring integrated Wi-Fi and 12-bit SAR ADC.
-* **Thermocouple Interface:** MAX6675 (SPI-compatible) providing 0.25°C resolution and cold-junction compensation.
-* **Analog Sensor:** 100kΩ NTC Thermistor (Beta Coefficient ≈ 4092).
-* **Reference Resistor:** 100kΩ high-precision resistor (used in a voltage divider configuration).
+---
 
-### 2.2 Electrical Connections (Pin Mapping)
+## Features
 
-The hardware interface is defined as follows:
+- Dual-channel temperature monitoring
+- Real-time telemetry dashboard
+- Embedded web server hosted on ESP32
+- Dynamic temperature plotting with Chart.js
+- ADC noise reduction using moving average filtering
+- NTC linearization using the Steinhart-Hart equation
+- Wi-Fi monitoring without external software
+- SPI communication with MAX6675
 
-| Component | ESP32 GPIO | Logic Function | Description |
-| :--- | :--- | :--- | :--- |
-| **MAX6675 SO** | GPIO 19 | MISO | Serial Data Output |
-| **MAX6675 CS** | GPIO 5 | SS | Chip Select (Active Low) |
-| **MAX6675 SCK** | GPIO 18 | SCK | Serial Clock |
-| **NTC 100k** | GPIO 34 | ADC1_CH6 | Analog Input (12-bit) |
-| **VCC** | 3.3V | Power | System Logic Voltage |
-| **GND** | GND | Ground | Common Reference |
+---
 
-## 3. Mathematical Modeling and Signal Processing
+## Technologies
 
-### 3.1 NTC Linearization
-The NTC resistance $R$ is determined via a voltage divider. To convert the resistance into absolute temperature (Kelvin), the system implements the Steinhart-Hart simplification (B-parameter equation):
+| Technology | Description |
+|---|---|
+| C++ | Main firmware language |
+| ESP32 | Main microcontroller |
+| Arduino IDE | Development environment |
+| HTML5 / CSS3 | Embedded frontend |
+| JavaScript | Real-time updates |
+| Chart.js | Temperature graph rendering |
+| MAX6675 | Thermocouple interface |
+| Wi-Fi | Local telemetry communication |
 
-$$\frac{1}{T} = \frac{1}{T_0} + \frac{1}{\beta} \ln\left(\frac{R}{R_0}\right)$$
+---
+
+## Hardware Architecture
+
+The ESP32 operates as the central processing unit responsible for sensor acquisition, data processing, and web communication.
+
+A MAX6675 module handles the K-Type thermocouple through SPI communication, providing cold-junction compensation and digital temperature conversion. Ambient temperature sensing is performed using a 100kΩ NTC thermistor configured in a voltage divider circuit connected to a 12-bit ADC channel.
+
+The system also implements averaging techniques to reduce ADC noise and improve signal stability during acquisition.
+
+---
+
+## Pin Mapping
+
+| Component | ESP32 GPIO | Function |
+|---|---|---|
+| MAX6675 SO | GPIO 19 | MISO |
+| MAX6675 CS | GPIO 5 | Chip Select |
+| MAX6675 SCK | GPIO 18 | SPI Clock |
+| NTC 100k | GPIO 34 | ADC Input |
+| VCC | 3.3V | Power |
+| GND | GND | Ground |
+
+---
+
+## Signal Processing
+
+The thermistor temperature calculation uses the Steinhart-Hart simplification based on the Beta parameter equation.
+
+:contentReference[oaicite:0]{index=0}
 
 Where:
-* $T_0$: Reference temperature (298.15 K / 25°C).
-* $R_0$: Nominal resistance at $T_0$ (100,000 Ω).
-* $\beta$: Material-specific Beta coefficient (4092).
-* $R$: Measured resistance derived from the ADC value.
 
-### 3.2 Noise Mitigation
-To ensure signal integrity, the firmware implements an oversampling and averaging algorithm. For each NTC reading cycle, the system performs 20 successive samples at a defined sampling frequency to compute a arithmetic mean, effectively acting as a low-pass filter to reject high-frequency noise.
+- \(T_0\) = 298.15 K (25°C)
+- \(R_0\) = 100000 Ω
+- \(\beta\) = 4092
+- \(R\) = Measured thermistor resistance
 
-## 4. Software Implementation
+To improve measurement stability, the firmware performs multiple ADC samples and computes their arithmetic mean, reducing quantization noise and electromagnetic interference.
 
-### 4.1 Backend
-The firmware is written in C++ using the Arduino framework for ESP32. It manages:
-* Wi-Fi Station (STA) mode connection.
-* SPI communication protocol for the MAX6675.
-* HTTP request handling for the root dashboard and JSON data endpoints.
+---
 
-### 4.2 Frontend
-The embedded UI is built with HTML5, CSS3, and JavaScript. It utilizes:
-* **Chart.js:** To render a dynamic time-series graph of temperature fluctuations.
-* **AJAX/Fetch API:** For asynchronous data polling from the ESP32 without requiring a page refresh.
+## Software Architecture
 
-## 5. Deployment Instructions
+### Backend
 
-### 5.1 Environment Setup
-1.  Install the **Arduino IDE** (or PlatformIO).
-2.  Install the ESP32 Board Manager.
-3.  Install the required libraries via the Library Manager:
-    * `MAX6675 library` by Adafruit.
+The firmware was developed in C++ using the Arduino framework for ESP32. It manages:
 
-### 5.2 Configuration
-1.  Open `Esp32_Temp_Sensoring.ino`.
-2.  Modify the network credentials (lines 7-8):
-    ```cpp
-    const char* ssid = "YOUR_WIFI_SSID";
-    const char* password = "YOUR_WIFI_PASSWORD";
-    ```
-3.  **Calibration:** Verify the `SERIES_RESISTOR` constant (line 16). If using a standard 100kΩ resistor, ensure it is set to `100000.0`. If manual calibration is required based on multimeter measurements, adjust accordingly.
+- Wi-Fi connection
+- SPI communication
+- Sensor acquisition
+- HTTP request handling
+- JSON telemetry endpoints
 
-### 5.3 Execution
-1.  Compile and flash the firmware to the ESP32.
-2.  Initialize the Serial Monitor at `115200 baud`.
-3.  Once connected, the ESP32 will output its local IP address.
-4.  Enter the IP address into any web browser on the same local network to access the telemetry dashboard.
+### Frontend
 
-## 6. Project Contributors
+The web interface uses HTML, CSS, and JavaScript running directly on the ESP32. Temperature data is updated asynchronously using the Fetch API, while Chart.js is responsible for rendering real-time graphs.
 
-* **Jonathan A. M. Candido**
-* **Samara L. C. Hurtado**
-* **Henrique M. Ribeiro**
-* **Rafael D. S. Magalhães**
+---
 
-## 7. References
+## Required Libraries
 
-* Steinhart, J. S., & Hart, S. R. (1968). Calibration curves for thermistors. Deep Sea Research and Oceanographic Abstracts.
-* ESP32 Technical Reference Manual.
-* Adafruit MAX6675 Library Documentation.
+```cpp
+#include <WiFi.h>
+#include <SPI.h>
+#include <max6675.h>
+```
+
+---
+
+## Running the Project
+
+1. Install Arduino IDE or PlatformIO.
+2. Install the ESP32 board package.
+3. Install the MAX6675 library.
+4. Open `Esp32_Temp_Sensoring.ino`.
+5. Configure your Wi-Fi credentials:
+
+```cpp
+const char* ssid = "YOUR_WIFI_SSID";
+const char* password = "YOUR_WIFI_PASSWORD";
+```
+
+6. Compile and upload the firmware to the ESP32.
+7. Open the Serial Monitor at `115200 baud`.
+8. Access the IP address displayed by the ESP32 from any browser on the same network.
+
+---
+
+## Calibration
+
+The NTC thermistor uses a 100kΩ reference resistor in a voltage divider configuration.
+
+```cpp
+const float SERIES_RESISTOR = 100000.0;
+```
+
+If necessary, this value can be adjusted according to multimeter measurements for improved accuracy.
+
+---
+
+## Applications
+
+This project can be applied to industrial thermal monitoring, laboratory instrumentation, environmental telemetry, embedded sensing systems, and educational IoT experiments involving real-time data acquisition.
+
+---
+
+## Contributors
+
+- Jonathan A. M. Candido
+- Samara L. C. Hurtado
+- Henrique M. Ribeiro
+- Rafael D. S. Magalhães
+
+---
+
+## Institution
+
+Federal Institute of Education, Science and Technology of São Paulo — IFSP  
+Bragança Paulista Campus  
+Control and Automation Engineering
+
+---
+
+## References
+
+- Steinhart, J. S., & Hart, S. R. — Calibration curves for thermistors
+- ESP32 Technical Reference Manual
+- Adafruit MAX6675 Documentation
